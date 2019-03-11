@@ -1,0 +1,22 @@
+{
+  "name": "demoapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "routes.js",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "body-parser": "^1.18.3",
+    "nodemon": "^1.18.10",
+    "restify": "^8.1.0",
+    "rethinkdb": "^2.3.3",
+    "socket.io": "^2.2.0",
+    "socketio": "^1.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "nodemon routes.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Alex",
+  "license": "ISC"
+}
