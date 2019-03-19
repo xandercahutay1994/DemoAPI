@@ -6,6 +6,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "body-parser": "^1.18.3",
+    "lodash": "^4.17.11",
     "nodemon": "^1.18.10",
     "restify": "^8.1.0",
     "rethinkdb": "^2.3.3",

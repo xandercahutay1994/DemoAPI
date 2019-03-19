@@ -3,6 +3,7 @@
 const restify = require('restify')
 const dbConfig  = require('./config')
 const r = require('rethinkdb')
+const orderBy = require('lodash/orderBy')
 
 const server = restify.createServer()
 server.use(restify.plugins.bodyParser()) //execute when route has been chosen to service the request
@@ -22,25 +23,20 @@ const routeWrapper = route => async(req, res, next) => {
   }
 }
 
-// const checkIfGroupCreator = ({ group_id, member_id: creator_id }) => {
-//   return r.table('tbl_Group')
-//     .get(group_id)('creator_id')
-//     .eq(creator_id)
-//     .default({})
-//     .run(connection)
-// }
+const fieldRequired = (message) => {
+  throw { status: 400, message: `${message} is required` }
+}
 
 /* USERS */
-
 const createUser = async(req, res) => {
   const { body } = req
-  
+
   if (!body.email) 
-    throw { status: 400, message: 'Email is required' }
+    fieldRequired('Email')
   if (!body.fname) 
-    throw { status: 400, message: 'Firstname is required' }
+    fieldRequired('Firstname')
   if (!body.lname) 
-    throw { status: 400, message: 'Lastname is required' }
+    fieldRequired('Lastname')
 
   const postData = {
     ...req.body,
@@ -149,11 +145,13 @@ const createMessage = async(req, res) => {
   const { body } = req
 
   if (!body.message) 
-    throw { status: 400, message: 'Message is required' }
+    fieldRequired('Message')
+
   if (!body.sender_id)
-    throw { status: 400, message: 'Sender Id is required' }
+    fieldRequired('Sender Id')
+
   if (!body.receiver_id)
-    throw { status: 400, message: 'Receiver Id is required' }
+    fieldRequired('Receiver Id')
 
   const postData = {
     ...req.body,
@@ -181,7 +179,6 @@ const getAllMessagesReceived = async(req, res) => {
                 .run(connection)
 
   if (!result.length)
-    // throw new SyntaxError('Id is Incorrect')
     res.send('No conversation(s) yet!')
   else
     res.send(result)
@@ -191,20 +188,17 @@ const getConvoOfReceiverSender = async(req, res) => {
   const { params : { receiver_id, sender_id } } = req
 
   const result = await r.table('tbl_Message')
-                .getAll(receiver_id, { index: 'receiver_id' })
-                .filter({ sender_id })
+                .getAll(r.expr([receiver_id, sender_id]), { index: 'ids'} )
                 .union(
-                  r.table('tbl_Message') 
-                  .getAll(sender_id, { index: 'receiver_id' })
-                  .filter({ sender_id: receiver_id })
+                  r.table('tbl_Message').getAll(r.expr([sender_id, receiver_id]), { index: 'ids'} )
                 )
-                .orderBy('date_created')
+                .coerceTo('array')
                 .run(connection)
 
   if (!result.length)
     res.send(200, 'You have no conversation with this person yet')
   else 
-    res.send(200, result)
+    res.send(200, orderBy(result, ['date_created'], ['desc']))
 }
 
 const deleteSpecMessage = async(req, res) => {
@@ -258,9 +252,10 @@ const createGroup = async(req, res) => {
   const { body } = req
   
   if (!body.group_name)
-    throw { status: 400, message: 'Group Name is Required' }
+    fieldRequired('Group Name')
+
   if (!body.creator_id)
-    throw { status: 400, message: 'Creator Id is Required' }
+    fieldRequired('Creator Id')
 
   const checkUser = await r.table('tbl_User').coerceTo('array').run(connection)
   
@@ -296,9 +291,10 @@ const addUserToGroup = async(req, res) => {
   const { params, body : { member_id, user_id } } = req
 
   if (!body.member_id)
-    throw { status: 400, message: 'Member Id is Required' }
+    fieldRequired('Member Id')
+
   if (!body.user_id)
-    throw { status: 400, message: 'User Id is Required' }
+    fieldRequired('User Id')
 
   const isUserInGroup = await r.table('tbl_UserGroup')
                       .filter({ group_id: params.id })
